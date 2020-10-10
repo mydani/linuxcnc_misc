@@ -1,0 +1,87 @@
+component home_index_stepdir;   // if you run "simple" stepps w/o encoder feedback to LinuxCNC, 
+			                    // but have an index signal and a home switch, this component will help you out
+                                // We will not use the HOME_USE_INDEX but the standard homing procedure with
+                                // the settings: SEARCH_VEL:POS, LATCH_VEL:POS, USE_INDEX:FALSE
+
+
+pin in bit home_switch; // your home switch for the axis
+pin in bit index_signal; // signal, e.g. proximity sensor on a gear
+pin in bit axis_is_homing; // whether or not the axis is homed
+
+pin out bit calc_home_signal = 0; // shall be connected to the home signal LinuxcCNC expectes for the axis
+
+variable s32 state = 0; 
+
+function _;
+author "Daniel Hahn (mydani@gmx.de)";
+license "GPL";
+;;
+
+FUNCTION(_)
+{
+    if(axis_is_homing)
+    {
+        switch(state)
+        {
+			// Start: check whether we start from "outside" the home switch or with it active (special)
+			case 0:
+				if (home_switch == 1)
+				{
+					state = 5;
+					calc_home_signal = 1;
+				}
+				if(home_switch == 0)
+					state = 1;
+			break;
+        
+            // 1. check when home switch is hit, send 1 to linuxcnc
+            case 1:
+                if(home_switch == 1)
+                {
+                    calc_home_signal = 1;
+                    state = 2;
+                }
+            break;
+            // 2. now the homing direction has changed and we wait for the index signal, and must be outside of homing switch activation
+            case 2:
+                if((index_signal == 1) && (home_switch == 0))                
+                {
+                    state = 3;
+                }
+            break;
+            // 3. now the index signal is gone, and we can finally tell linuxcnc to change direction once more
+            case 3:
+				if(index_signal == 0)
+				{
+					state = 4;
+					calc_home_signal = 0;
+				}	
+            break;
+            // 4. last action - when the index signal comes back, 
+            case 4:
+                if(index_signal == 1)
+                {
+                    state = 7;
+                    calc_home_signal = 1;
+                }
+            break;
+            // Support backing off from the active home switch
+            case 5:
+				if(home_switch == 0)
+				{
+					calc_home_signal = 0;
+					state = 1;
+				}
+            break;
+            // Nothing to do anymore until next homing
+            case 7:
+            break;
+
+        }
+    }
+    else
+    {
+        state = 0;
+        calc_home_signal = 0;
+	}
+}

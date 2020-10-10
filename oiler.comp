@@ -1,0 +1,83 @@
+component oiler;
+
+pin in float x_weg = 0;
+pin in float z_weg = 0;
+pin in float restweg = 0; //falls es einen restweg zum zyklus gibt 
+pin out float psrestweg = 0;
+
+
+variable float zuletzt_geoelt = 0;
+variable bool restweg_verarbeitet = false;
+
+pin in bit oil_now_req = false;
+pin out bit oil_now = false;
+
+param rw s32 oelinterval = 2000; //alle 20m weg
+param rw float times = 2200;
+pin out float sleeptime = 0; 
+
+pin out s32 progress_level = 0; 
+
+option singleton yes;
+function _;
+author "Daniel Hahn (mydani@gmx.de)";
+license "GPL";
+;;
+
+
+FUNCTION(_)
+{
+    switch (progress_level)
+    {
+        case 0:  // idle
+
+			if(restweg > 0 && !restweg_verarbeitet)
+			{
+				zuletzt_geoelt = -restweg;
+				restweg_verarbeitet = true;
+			}
+	
+			psrestweg = ((x_weg + z_weg) - zuletzt_geoelt);
+			
+			if( ((x_weg + z_weg) -	zuletzt_geoelt) > oelinterval)
+			{
+
+					sleeptime = 0;
+					progress_level = 1;
+					oil_now = true; 
+					break;
+			}
+
+			break;
+			
+        case 1: // oel dauer abwarten
+			if(sleeptime < times)  
+			{
+				sleeptime++;
+			}
+			else
+				progress_level = 2;
+
+            break;
+			
+        case 2: // Forward move - read the truth table to determine position
+			oil_now = false;
+			zuletzt_geoelt = (x_weg + z_weg);
+								
+			progress_level = 0;
+
+            break;
+
+        default:    
+			progress_level = 10;
+			rtapi_print_msg(RTAPI_MSG_ERR, "Error state in oiler");            
+			break;
+	}
+	if(oil_now_req == true)
+	{
+		sleeptime = 0;
+		progress_level = 1;
+		oil_now = true; 		
+	}
+ 
+}

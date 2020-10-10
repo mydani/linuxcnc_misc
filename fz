@@ -1,0 +1,30 @@
+#!/usr/bin/python
+import hal,time
+import linuxcnc
+
+h = hal.component("fz")
+h.newpin("idle", hal.HAL_BIT, hal.HAL_IN);
+h.newpin("running", hal.HAL_BIT, hal.HAL_IN);
+h.ready()
+
+
+
+try:
+	cycle_start_handled = 0
+
+	hal.connect("fz.running", "fzrunning")
+	hal.connect("fz.idle", "fzidle")
+	
+	while 1:
+		time.sleep(1)
+		if cycle_start_handled == 0 and h['running'] == 1:
+			cycle_start_handled = 1
+			c = linuxcnc.command()
+			c.feedrate(0.0)
+			print "Blabla"
+		if h['idle'] == 1 and cycle_start_handled == 1:
+			cycle_start_handled = 0			
+			print "Blububu"
+except KeyboardInterrupt:
+	raise SystemExit
+		
