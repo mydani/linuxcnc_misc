@@ -1,0 +1,288 @@
+component ac20changer;
+
+pin in bit Anfahren;
+pin out bit AnfahrenBeendet = false;
+pin out bit Fehler = false;
+pin in float Werkzeugplatz;
+
+pin in bit Index = false;
+pin in bit Vorab2 = false;
+pin in bit Vorab3 = false;
+pin in bit Vorab4 = false;
+pin in bit Vorab5 = false;
+pin in bit Vorab6 = false;
+pin in bit Vorab7 = false;
+pin in bit Vorab8 = false;
+pin in bit Vorab9 = false;
+pin in bit Vorab10 = false;
+pin in bit Klinke = false;
+pin in bit PositionMotor = false;
+pin in bit MaschineEin = false;
+
+pin out bit Rechts = false;
+pin out bit Links = false;
+pin out bit Eilgang = false;
+pin out bit Positionieren = false;
+
+pin out s32 Position_Ist = 0; // 1-9 Werkzeug, 0 neutral
+pin out s32 Position_Wunsch = 0;
+pin out s32 progress_level = -10;         
+
+option singleton yes;                   
+function _;
+author "Daniel Hahn mydani@gmx.de";
+license "(C) 2019";
+;;
+
+
+FUNCTION(_)
+{
+	if (MaschineEin)
+	{
+	    switch (progress_level)
+	        {
+		case -10:
+			// Init! Wechsler muss eingezogen sein!!
+			if(!PositionMotor || Klinke) // darf eigentlich nicht sein weil PositionMotor erreicht!
+			{
+				Fehler=true;
+				break;
+			}
+			if(Vorab2 && Vorab3 && Index) // neutrale Tellerposition, super!
+			{
+				Rechts=false;
+				Links=false;
+				Eilgang=false;
+				Positionieren=false;
+				Position_Ist = 0;
+				Position_Wunsch = 0;
+				Fehler=false;
+				AnfahrenBeendet=false;
+				progress_level = 0; // Init fertig			
+			}
+			else
+			{
+				Rechts=true;
+				Positionieren=true;	
+			}
+	
+			break;		
+	
+	        case 0:
+			if(Anfahren)
+			{
+				if(Position_Wunsch != Werkzeugplatz)
+				{
+					if(Werkzeugplatz > 0)
+						Position_Wunsch = Werkzeugplatz;
+					if(Werkzeugplatz == -1)
+						Position_Wunsch = 0;
+					AnfahrenBeendet=false;
+					progress_level=1;
+				}
+				else
+				{
+					progress_level=0;
+					AnfahrenBeendet=true;
+				}
+			}
+			else
+			{
+				AnfahrenBeendet = false;
+			}
+	
+			break;			
+		
+		case 1: // Eilgang
+	
+			if(Position_Ist == 0) // Sonderfall von neutraler Position zu Werkzeug
+			{				
+				if(Position_Wunsch <= 5)
+					Links = true;
+				else
+					Rechts = true;
+	
+				Eilgang = true;
+			}
+			else if( (Position_Ist != 0) && (Position_Wunsch == 0) ) // Sonderfall von Werkzeug zu neutraler Position
+			{
+				if(Position_Ist <= 5)
+					Rechts = true;
+				else
+					Links = true;
+				Eilgang = true;
+			}
+			else // Berechnung welcher Weg der kürzere ist und welche Richtung gedreht werden muss
+			{
+				if(Position_Ist > Position_Wunsch) // Rechts
+				{
+					Rechts = true;
+					if((Position_Ist - Position_Wunsch) > 2)
+						Eilgang = true;
+					else
+						Positionieren = true;
+				}
+				else // Links
+				{
+					Links = true;
+					if((Position_Wunsch - Position_Ist) > 2)
+						Eilgang = true;
+					else
+						Positionieren = true;
+				}			
+			}
+	
+			progress_level = 2;
+	
+			break;
+		
+		case 2: // Positionieren
+			if(Eilgang)
+			{
+				switch(Position_Wunsch)
+				{
+					case 0:
+						if(Vorab2 && Vorab3)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 9:
+						if (Vorab3 && !Vorab2)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 8:
+						if (Vorab10)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 7:
+						if (Vorab9)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 6:
+						if (Vorab8)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 5:
+						if (Vorab7)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 4:
+						if (Vorab6)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 3:
+						if (Vorab5)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 2:
+						if (Vorab4)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+					case 1:
+						if (Vorab2 && !Vorab3)
+						{
+							Eilgang = false;
+							Positionieren = true;
+						}
+					break;
+				}			
+			}
+			if(Positionieren)
+			{
+				if(Index)
+				{		
+					switch(Position_Wunsch)
+					{
+						case 0:
+							if(Vorab2 && Vorab3)
+								Positionieren = false;
+						break;
+						case 9:
+							if (Vorab3 && Vorab10 && !Vorab9)
+								Positionieren = false;
+						break;
+						case 8:
+							if (Vorab3 && Vorab10 && Vorab9)
+								Positionieren = false;
+						break;
+						case 7:
+							if (Vorab10 && Vorab9 && Vorab8)
+								Positionieren = false;
+						break;
+						case 6:
+							if (Vorab9 && Vorab8 && Vorab7)
+								Positionieren = false;
+						break;
+						case 5:
+							if (Vorab8 && Vorab7 && Vorab6)
+								Positionieren = false;
+						break;
+						case 4:
+							if (Vorab7 && Vorab6 && Vorab5)
+								Positionieren = false;
+						break;
+						case 3:
+							if (Vorab6 && Vorab5 && Vorab4)
+								Positionieren = false;
+						break;
+						case 2:
+							if (Vorab5 && Vorab4 && Vorab2)
+								Positionieren = false;
+						break;
+						case 1:
+							if (Vorab4 && Vorab2 && !Vorab5)
+								Positionieren = false;
+						break;
+					}
+				}
+			}
+	
+			if((Positionieren == false) && (Eilgang == false))
+			{	 
+				Links = false;
+				Rechts = false;
+				Position_Ist = Position_Wunsch;
+				AnfahrenBeendet=true;
+				progress_level = 0;
+			}
+	
+			break;
+	
+	        default:    
+			progress_level = 10;
+			rtapi_print_msg(RTAPI_MSG_ERR, "Error state in AC20changer - now disabled");            
+			break;
+	        }
+	}
+	else
+	{
+		progress_level = -10;
+	}
+}
+	
