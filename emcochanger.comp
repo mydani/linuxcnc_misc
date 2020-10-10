@@ -29,8 +29,8 @@ variable bool skippy = false;
 
 option singleton yes;                   // makes no sense to have more than one of these components running - only one ATC
 function _;
-author "";
-license "";
+author "Daniel Hahn (mydani@gmx.de)";
+license "GPL";
 ;;
 
 
