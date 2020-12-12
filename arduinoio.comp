@@ -1,0 +1,278 @@
+component arduinoio;
+
+pin in bit in1 = false;
+pin in bit in2 = false;
+pin in bit in3 = false;
+pin in bit in4 = false;
+pin in bit in5 = false;
+pin in bit in6 = false;
+pin in bit in7 = false;
+pin in bit in8 = false;
+pin in bit in9 = false;
+pin in bit in10 = false;
+pin in bit in11 = false;
+pin in bit in12 = false;
+pin in bit in13 = false;
+pin in bit in14 = false;
+pin in bit in15 = false;
+pin in bit in16 = false;
+pin in bit in17 = false;
+pin in bit in18 = false;
+pin in bit in19 = false;
+pin in bit in20 = false;
+pin in bit in21 = false;
+pin in bit in22 = false;
+pin in bit in23 = false;
+pin in bit in24 = false;
+pin in bit in25 = false;
+pin in bit in26 = false;
+pin in bit in27 = false;
+pin in bit in28 = false;
+pin in bit in29 = false;
+pin in bit in30 = false;
+pin in bit in31 = false;
+pin in bit in32 = false;
+pin in bit in33 = false;
+pin in bit in34 = false;
+pin in bit in35 = false;
+pin in bit in36 = false;
+pin in bit in37 = false;
+pin in bit in38 = false;
+pin in bit in39 = false;
+pin in bit in40 = false;
+pin in bit in41 = false;
+pin in bit in42 = false;
+pin in bit in43 = false;
+pin in bit in44 = false;
+pin in bit in45 = false;
+pin in bit in46 = false;
+pin in bit in47 = false;
+pin in bit in48 = false;
+pin in bit in49 = false;
+pin in bit in50 = false;
+pin in bit in51 = false;
+pin in bit in52 = false;
+pin in bit in53 = false;
+pin in bit in54 = false;
+pin in bit in55 = false;
+pin in bit in56 = false;
+pin in bit in57 = false;
+pin in bit in58 = false;
+pin in bit in59 = false;
+pin in bit in60 = false;
+pin in bit in61 = false;
+pin in bit in62 = false;
+pin in bit in63 = false;
+pin in bit in64 = false;
+
+pin out bit out1 = false;
+pin out bit out2 = false;
+pin out bit out3 = false;
+pin out bit out4 = false;
+pin out bit out5 = false;
+pin out bit out6 = false;
+pin out bit out7 = false;
+pin out bit out8 = false;
+pin out bit out9 = false;
+pin out bit out10 = false;
+pin out bit out11 = false;
+pin out bit out12 = false;
+pin out bit out13 = false;
+pin out bit out14 = false;
+pin out bit out15 = false;
+pin out bit out16 = false;
+pin out bit out17 = false;
+pin out bit out18 = false;
+pin out bit out19 = false;
+pin out bit out20 = false;
+pin out bit out21 = false;
+pin out bit out22 = false;
+pin out bit out23 = false;
+pin out bit out24 = false;
+pin out bit out25 = false;
+pin out bit out26 = false;
+pin out bit out27 = false;
+pin out bit out28 = false;
+pin out bit out29 = false;
+pin out bit out30 = false;
+pin out bit out31 = false;
+pin out bit out32 = false;
+pin out bit out33 = false;
+pin out bit out34 = false;
+pin out bit out35 = false;
+pin out bit out36 = false;
+pin out bit out37 = false;
+pin out bit out38 = false;
+pin out bit out39 = false;
+pin out bit out40 = false;
+pin out bit out41 = false;
+pin out bit out42 = false;
+pin out bit out43 = false;
+pin out bit out44 = false;
+pin out bit out45 = false;
+pin out bit out46 = false;
+pin out bit out47 = false;
+pin out bit out48 = false;
+pin out bit out49 = false;
+pin out bit out50 = false;
+pin out bit out51 = false;
+pin out bit out52 = false;
+pin out bit out53 = false;
+pin out bit out54 = false;
+pin out bit out55 = false;
+pin out bit out56 = false;
+pin out bit out57 = false;
+pin out bit out58 = false;
+pin out bit out59 = false;
+pin out bit out60 = false;
+pin out bit out61 = false;
+pin out bit out62 = false;
+pin out bit out63 = false;
+pin out bit out64 = false;
+
+
+
+pin out u32 inbyte1 = 0;
+pin out u32 inbyte2 = 0;
+pin out u32 inbyte3 = 0;
+pin out u32 inbyte4 = 0;
+
+pin out u32 outbyte1 = 0;
+pin out u32 outbyte2 = 0;
+pin out u32 outbyte3 = 0;
+pin out u32 outbyte4 = 0;
+
+
+option singleton no;               
+option userspace yes;
+option extra_setup yes;             
+option extra_cleanup yes;           
+
+author "mydani@gmx.de";
+license "";
+;;
+
+#include <stdio.h>    /* Standard input/output definitions */
+#include <stdlib.h> 
+#include <stdint.h>   /* Standard types */
+#include <string.h>   /* String function definitions */
+#include <unistd.h>   /* UNIX standard function definitions */
+#include <fcntl.h>    /* File control definitions */
+#include <errno.h>    /* Error number definitions */
+#include <termios.h>  /* POSIX terminal control definitions */
+#include <sys/ioctl.h>
+#include <sys/signal.h>
+#include <sys/types.h>
+
+#define BAUDRATE B115200
+#define DEVICE "/dev/ttyUSB1"
+#define _POSIX_SOURCE 1 /* POSIX compliant source */
+
+#define bitRead(value, bit) (((value) >> (bit)) & 0x01)
+#define bitSet(value, bit) ((value) |= (1UL << (bit)))
+#define bitClear(value, bit) ((value) &= ~(1UL << (bit)))
+#define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
+
+int fd;                             // file descriptor
+struct termios oldtio,newtio;       // new and saved old port setup
+char in[4];
+
+void user_mainloop(void)
+{
+    int rxstate = 0;
+    char rx;
+       
+    while (fd != -1) 
+    {
+       usleep(500);//approx 1 sec
+
+       FOR_ALL_INSTS()
+       {
+	 // read and sync to magic pattern "OUT"
+	  while(( read(fd,&rx,1) > 0) && rxstate <= 6)
+	  {
+	    switch(rxstate)
+	    {
+	      case 0:
+	        if(rx == 'I')
+	          rxstate++;
+	      break;
+	      case 1:
+	        if(rx == 'N')
+	          rxstate++;
+	      break;
+	      case 2:
+	        if(rx == ':')
+	          rxstate++;
+	      break;
+	      case 3:
+	        in[0]=rx;
+	        rxstate++;
+	      break;
+	      case 4:
+	        in[1]=rx;
+	        rxstate++;
+	      break;
+	      case 5:
+	        in[2]=rx;
+	        rxstate++;
+	      break;
+	      case 6:
+	        in[3]=rx;
+	        rxstate++;
+	      break;
+	    }
+	  }
+
+	  if(rxstate >=6)
+	  {
+	        fprintf(stderr,"DIGITAL %x %x %x %x\n", in[0], in[1], in[2], in[3]);
+		inbyte1 = in[0];
+		inbyte2 = in[1];
+		inbyte3 = in[2];
+		inbyte4 = in[3];
+		rxstate = 0;
+	  }
+       }
+    }
+    fprintf(stderr, "Exiting");
+    exit(0);
+         
+}
+
+EXTRA_SETUP()
+{
+	fd = open(DEVICE, O_RDWR | O_NOCTTY ); 
+        if (fd <0)
+        {
+            perror(DEVICE); 
+            exit(-1); 
+        }
+        
+        tcgetattr(fd,&oldtio); /* save current port settings */
+        
+        bzero(&newtio, sizeof(newtio));
+        newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+        newtio.c_iflag = IGNPAR;
+        newtio.c_oflag = 0;
+        
+        /* set input mode (non-canonical, no echo,...) */
+        newtio.c_lflag = 0;
+         
+        newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
+        newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
+        
+        tcflush(fd, TCIFLUSH);
+
+     if(( tcsetattr(fd,TCSANOW,&newtio) ) == -1)       // -1 for error 0 is OK
+     {
+	fprintf(stderr,"Error opening ttyUSB0");
+     }
+}
+
+EXTRA_CLEANUP()
+{
+    tcsetattr(fd, TCSANOW, &oldtio);
+    close(fd);
+    fprintf(stderr,"All cleaned up");
+}
